@@ -689,7 +689,8 @@ common_call_trampoline (mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTable *
 			actual_method = mono_class_inflate_generic_method_checked (declaring, &context, error);
 			mono_error_assert_ok (error);
 		} else {
-			actual_method = mono_class_get_method_generic (klass, m);
+			actual_method = mono_class_get_method_generic (klass, m, error);
+			mono_error_assert_ok (error);
 		}
 
 		g_assert (klass);
@@ -836,7 +837,7 @@ gpointer
 mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 {
 	gpointer res;
-	MonoError error;
+	ERROR_DECL (error);
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -867,7 +868,7 @@ mono_vcall_trampoline (mgreg_t *regs, guint8 *code, int slot, guint8 *tramp)
 	MonoVTable *vt;
 	gpointer *vtable_slot;
 	MonoMethod *m;
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer addr, res = NULL;
 
 	UnlockedIncrement (&trampoline_calls);
@@ -938,7 +939,7 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoError error;
+	ERROR_DECL (error);
 	MonoGenericContext context = { NULL, NULL };
 	MonoMethod *imt_method, *declaring;
 	gpointer addr;
@@ -962,7 +963,11 @@ mono_generic_virtual_remoting_trampoline (mgreg_t *regs, guint8 *code, MonoMetho
 		context.method_inst = ((MonoMethodInflated*)imt_method)->context.method_inst;
 	m = mono_class_inflate_generic_method_checked (declaring, &context, &error);
 	g_assert (mono_error_ok (&error)); /* FIXME don't swallow the error */;
-	m = mono_marshal_get_remoting_invoke_with_check (m);
+	m = mono_marshal_get_remoting_invoke_with_check (m, &error);
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	addr = mono_jit_compile_method (m, &error);
 	if (!mono_error_ok (&error)) {
@@ -993,7 +998,7 @@ mono_aot_trampoline (mgreg_t *regs, guint8 *code, guint8 *token_info,
 	MonoMethod *method = NULL;
 	gpointer addr;
 	guint8 *plt_entry;
-	MonoError error;
+	ERROR_DECL (error);
 
 	UnlockedIncrement (&trampoline_calls);
 
@@ -1037,7 +1042,7 @@ mono_aot_plt_trampoline (mgreg_t *regs, guint8 *code, guint8 *aot_module,
 
 	guint32 plt_info_offset = mono_aot_get_plt_info_offset (regs, code);
 	gpointer res;
-	MonoError error;
+	ERROR_DECL (error);
 
 	UnlockedIncrement (&trampoline_calls);
 
@@ -1065,7 +1070,7 @@ mono_rgctx_lazy_fetch_trampoline (mgreg_t *regs, guint8 *code, gpointer data, gu
 	gpointer arg = (gpointer)(gssize)r [MONO_ARCH_VTABLE_REG];
 	guint32 index = MONO_RGCTX_SLOT_INDEX (slot);
 	gboolean mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
-	MonoError error;
+	ERROR_DECL (error);
 	gpointer res;
 
 	UnlockedIncrement (&trampoline_calls);
@@ -1098,7 +1103,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 	MonoJitInfo *ji;
 	MonoMethod *m;
 	MonoMethod *method = NULL;
-	MonoError error;
+	ERROR_DECL (error);
 	gboolean multicast, callvirt = FALSE, closed_over_null = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
 	gboolean need_unbox_tramp = FALSE;
@@ -1107,7 +1112,7 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 	MonoMethod *invoke = tramp_info->invoke;
 	guint8 *impl_this = (guint8 *)tramp_info->impl_this;
 	guint8 *impl_nothis = (guint8 *)tramp_info->impl_nothis;
-	MonoError err;
+	ERROR_DECL (err);
 	MonoMethodSignature *sig;
 	gpointer addr, compiled_method;
 	gboolean is_remote = FALSE;
@@ -1131,11 +1136,16 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 #ifndef DISABLE_REMOTING
 		if (delegate->target && mono_object_is_transparent_proxy (delegate->target)) {
 			is_remote = TRUE;
+			error_init (&err);
 #ifndef DISABLE_COM
 			if (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class != mono_class_get_com_object_class () &&
 			   !mono_class_is_com_object (((MonoTransparentProxy *)delegate->target)->remote_class->proxy_class))
 #endif
-				method = mono_marshal_get_remoting_invoke (method);
+				method = mono_marshal_get_remoting_invoke (method, &err);
+			if (!is_ok (&err)) {
+				mono_error_set_pending_exception (&err);
+				return NULL;
+			}
 		}
 #endif
 		if (!is_remote) {
@@ -1533,7 +1543,7 @@ MonoDelegateTrampInfo*
 mono_create_delegate_trampoline_info (MonoDomain *domain, MonoClass *klass, MonoMethod *method)
 {
 	MonoMethod *invoke;
-	MonoError error;
+	ERROR_DECL (error);
 	MonoDelegateTrampInfo *tramp_info;
 	MonoClassMethodPair pair, *dpair;
 	guint32 code_size = 0;

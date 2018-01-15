@@ -185,8 +185,8 @@ typedef struct {
 	gchar   *message;
 } GError;
 
-void    g_clear_error (GError **error);
-void    g_error_free (GError *error);
+void    g_clear_error (GError **gerror);
+void    g_error_free (GError *gerror);
 GError *g_error_new  (gpointer domain, gint code, const char *format, ...);
 void    g_set_error  (GError **err, gpointer domain, gint code, const gchar *format, ...);
 void    g_propagate_error (GError **dest, GError *src);
@@ -217,8 +217,8 @@ gchar       *g_strnfill       (gsize length, gchar fill_char);
 gchar       *g_strdelimit     (gchar *string, const gchar *delimiters, gchar new_delimiter);
 gchar       *g_strescape      (const gchar *source, const gchar *exceptions);
 
-gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **error);
-gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **error);
+gchar       *g_filename_to_uri   (const gchar *filename, const gchar *hostname, GError **gerror);
+gchar       *g_filename_from_uri (const gchar *uri, gchar **hostname, GError **gerror);
 
 gint         g_printf          (gchar const *format, ...);
 gint         g_fprintf         (FILE *file, gchar const *format, ...);
@@ -245,6 +245,8 @@ gint    g_ascii_xdigit_value (gchar c);
 #define g_ascii_isalpha(c)   (isalpha (c) != 0)
 #define g_ascii_isprint(c)   (isprint (c) != 0)
 #define g_ascii_isxdigit(c)  (isxdigit (c) != 0)
+gboolean g_utf16_ascii_equal (const gunichar2 *utf16, size_t ulen, const char *ascii, size_t alen);
+gboolean g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii);
 
 /* FIXME: g_strcasecmp supports utf8 unicode stuff */
 #ifdef _MSC_VER
@@ -720,6 +722,7 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 #endif
 
 #define  g_assert(x)     G_STMT_START { if (G_UNLIKELY (!(x))) g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x);  } G_STMT_END
+#define  g_assertf(x, format, ...) G_STMT_START { if (G_UNLIKELY(!(x))) g_assertion_message ("* Assertion at %s:%d, condition `%s' not met, " format "\n",  __FILE__, __LINE__, #x, __VA_ARGS__); } G_STMT_END
 #define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
 /*
@@ -780,8 +783,8 @@ gboolean g_ensure_directory_exists (const gchar *filename);
  * Shell
  */
 
-gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **error);
-gchar    *g_shell_unquote    (const gchar *quoted_string, GError **error);
+gboolean  g_shell_parse_argv (const gchar *command_line, gint *argcp, gchar ***argvp, GError **gerror);
+gchar    *g_shell_unquote    (const gchar *quoted_string, GError **gerror);
 gchar    *g_shell_quote      (const gchar *unquoted_string);
 
 /*
@@ -799,9 +802,9 @@ typedef enum {
 
 typedef void (*GSpawnChildSetupFunc) (gpointer user_data);
 
-gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **error);
+gboolean g_spawn_command_line_sync (const gchar *command_line, gchar **standard_output, gchar **standard_error, gint *exit_status, GError **gerror);
 gboolean g_spawn_async_with_pipes  (const gchar *working_directory, gchar **argv, gchar **envp, GSpawnFlags flags, GSpawnChildSetupFunc child_setup,
-				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **error);
+				gpointer user_data, GPid *child_pid, gint *standard_input, gint *standard_output, gint *standard_error, GError **gerror);
 
 int eg_getdtablesize (void);
 
@@ -872,10 +875,10 @@ typedef enum {
 } GFileTest;
 
 
-gboolean   g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **error);
-gboolean   g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **error);
+gboolean   g_file_set_contents (const gchar *filename, const gchar *contents, gssize length, GError **gerror);
+gboolean   g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GError **gerror);
 GFileError g_file_error_from_errno (gint err_no);
-gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **error);
+gint       g_file_open_tmp (const gchar *tmpl, gchar **name_used, GError **gerror);
 gboolean   g_file_test (const gchar *filename, GFileTest test);
 
 #define g_open open
@@ -904,7 +907,7 @@ gboolean       g_pattern_match_string (GPatternSpec *pspec, const gchar *string)
  * Directory
  */
 typedef struct _GDir GDir;
-GDir        *g_dir_open (const gchar *path, guint flags, GError **error);
+GDir        *g_dir_open (const gchar *path, guint flags, GError **gerror);
 const gchar *g_dir_read_name (GDir *dir);
 void         g_dir_rewind (GDir *dir);
 void         g_dir_close (GDir *dir);
@@ -929,26 +932,26 @@ typedef struct {
 				const gchar **attribute_names,
 				const gchar **attribute_values,
 				gpointer user_data,
-				GError **error);
+				GError **gerror);
 
 	void (*end_element)    (GMarkupParseContext *context,
 				const gchar         *element_name,
 				gpointer             user_data,
-				GError             **error);
+				GError             **gerror);
 	
 	void (*text)           (GMarkupParseContext *context,
 				const gchar         *text,
 				gsize                text_len,  
 				gpointer             user_data,
-				GError             **error);
+				GError             **gerror);
 	
 	void (*passthrough)    (GMarkupParseContext *context,
 				const gchar         *passthrough_text,
 				gsize                text_len,  
 				gpointer             user_data,
-				GError             **error);
+				GError             **gerror);
 	void (*error)          (GMarkupParseContext *context,
-				GError              *error,
+				GError              *gerror,
 				gpointer             user_data);
 } GMarkupParser;
 
@@ -959,9 +962,9 @@ GMarkupParseContext *g_markup_parse_context_new   (const GMarkupParser *parser,
 void                 g_markup_parse_context_free  (GMarkupParseContext *context);
 gboolean             g_markup_parse_context_parse (GMarkupParseContext *context,
 						   const gchar *text, gssize text_len,
-						   GError **error);
+						   GError **gerror);
 gboolean         g_markup_parse_context_end_parse (GMarkupParseContext *context,
-						   GError **error);
+						   GError **gerror);
 
 /*
  * Character set conversion
@@ -975,14 +978,14 @@ int g_iconv_close (GIConv cd);
 gboolean  g_get_charset        (G_CONST_RETURN char **charset);
 gchar    *g_locale_to_utf8     (const gchar *opsysstring, gssize len,
 				gsize *bytes_read, gsize *bytes_written,
-				GError **error);
+				GError **gerror);
 gchar    *g_locale_from_utf8   (const gchar *utf8string, gssize len, gsize *bytes_read,
-				gsize *bytes_written, GError **error);
+				gsize *bytes_written, GError **gerror);
 gchar    *g_filename_from_utf8 (const gchar *utf8string, gssize len, gsize *bytes_read,
-				gsize *bytes_written, GError **error);
+				gsize *bytes_written, GError **gerror);
 gchar    *g_convert            (const gchar *str, gssize len,
 				const gchar *to_codeset, const gchar *from_codeset,
-				gsize *bytes_read, gsize *bytes_written, GError **error);
+				gsize *bytes_read, gsize *bytes_written, GError **gerror);
 
 /*
  * Unicode manipulation

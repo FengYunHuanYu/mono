@@ -225,6 +225,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	FACADE_ASSEMBLY ("System.Net.WebHeaderCollection"),
 	FACADE_ASSEMBLY ("System.Net.WebSockets"),
 	FACADE_ASSEMBLY ("System.Net.WebSockets.Client"),
+	{"System.Numerics", 3},
 	{"System.Numerics.Vectors", 3},
 	FACADE_ASSEMBLY ("System.ObjectModel"),
 	FACADE_ASSEMBLY ("System.Reflection"),
@@ -1961,7 +1962,7 @@ mono_assembly_open_predicate (const char *filename, gboolean refonly,
 
 	new_fname = NULL;
 	if (!mono_assembly_is_in_gac (fname)) {
-		MonoError error;
+		ERROR_DECL (error);
 		new_fname = mono_make_shadow_copy (fname, &error);
 		if (!is_ok (&error)) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
@@ -2060,7 +2061,7 @@ free_item (gpointer val, gpointer user_data)
 void
 mono_assembly_load_friends (MonoAssembly* ass)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i;
 	MonoCustomAttrInfo* attrs;
 	GSList *list;
@@ -2318,7 +2319,7 @@ mono_assembly_load_from_predicate (MonoImage *image, const char *fname,
 	 * candidate. */
 
 	if (!refonly) {
-		MonoError refasm_error;
+		ERROR_DECL (refasm_error);
 		if (mono_assembly_has_reference_assembly_attribute (ass, &refasm_error)) {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Image for assembly '%s' (%s) has ReferenceAssemblyAttribute, skipping", ass->aname.name, image->name);
 			g_free (ass);
@@ -2978,7 +2979,7 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoAssembly *res;
 	MonoAssemblyName *aname, base_name;
 	MonoAssemblyName mapped_aname;
@@ -3347,7 +3348,7 @@ mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor,
 static MonoAssemblyName*
 mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_name)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoAssemblyBindingInfo *info, *info2;
 	MonoImage *ppimage;
 	MonoDomain *domain;
@@ -3560,7 +3561,7 @@ return_corlib_and_facades:
 static MonoAssembly*
 prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refonly)
 {
-	MonoError refasm_error;
+	ERROR_DECL (refasm_error);
 	error_init (&refasm_error);
 	if (candidate && !refonly) {
 		/* .NET Framework seems to not check for ReferenceAssemblyAttribute on dynamic assemblies */
@@ -3912,7 +3913,7 @@ mono_assembly_close (MonoAssembly *assembly)
 MonoImage*
 mono_assembly_load_module (MonoAssembly *assembly, guint32 idx)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoImage *result = mono_assembly_load_module_checked (assembly, idx, &error);
 	mono_error_assert_ok (&error);
 	return result;

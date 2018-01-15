@@ -993,10 +993,10 @@ mono_mem_counter (ImplVtable *vtable, MonoBoolean only_value, MonoCounterSample 
 		sample->rawValue = 0;
 		return TRUE;
 	case COUNTER_MEM_PHYS_TOTAL:
-		sample->rawValue = mono_determine_physical_ram_size ();;
+		sample->rawValue = mono_determine_physical_ram_size ();
 		return TRUE;
 	case COUNTER_MEM_PHYS_AVAILABLE:
-		sample->rawValue = mono_determine_physical_ram_available_size ();;
+		sample->rawValue = mono_determine_physical_ram_available_size ();
 		return TRUE;
 	}
 	return FALSE;
@@ -1245,7 +1245,6 @@ custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name)
 	inst = (SharedInstance*) shared_data_reserve_room (size, FTYPE_INSTANCE);
 	if (!inst) {
 		perfctr_unlock ();
-		g_free (name);
 		return NULL;
 	}
 	inst->category_offset = (char*)cat - (char*)shared_area;
@@ -1319,7 +1318,7 @@ void*
 mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString* instance,
 		MonoString* machine, int *type, MonoBoolean *custom)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	const CategoryDesc *cdesc;
 	void *result = NULL;
 	/* no support for counters on other machines */
@@ -1422,7 +1421,7 @@ mono_perfcounter_category_del (MonoString *name)
 MonoString*
 mono_perfcounter_category_help (MonoString *category, MonoString *machine)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoString *result = NULL;
 	const CategoryDesc *cdesc;
 	error_init (&error);
@@ -1490,7 +1489,7 @@ typedef struct {
 MonoBoolean
 mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoArray *items)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int result = FALSE;
 	int i, size;
 	int num_counters = mono_array_length (items);
@@ -1574,7 +1573,7 @@ failure:
 int
 mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, MonoString *machine)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	const CategoryDesc *cdesc;
 	SharedInstance *sinst;
 	char *name;
@@ -1605,7 +1604,7 @@ mono_perfcounter_instance_exists (MonoString *instance, MonoString *category, Mo
 MonoArray*
 mono_perfcounter_category_names (MonoString *machine)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i;
 	MonoArray *res;
 	MonoDomain *domain = mono_domain_get ();
@@ -1647,7 +1646,7 @@ leave:
 MonoArray*
 mono_perfcounter_counter_names (MonoString *category, MonoString *machine)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	int i;
 	SharedCategory *scat;
 	const CategoryDesc *cdesc;
@@ -1845,7 +1844,7 @@ get_custom_instances (MonoString *category, MonoError *error)
 MonoArray*
 mono_perfcounter_instance_names (MonoString *category, MonoString *machine)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	const CategoryDesc* cat;
 	MonoArray *result = NULL;
 	if (mono_string_compare_ascii (machine, ".")) {

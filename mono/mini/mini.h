@@ -35,6 +35,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/atomic.h>
+#include <mono/utils/mono-jemalloc.h>
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/mono-signal-handler.h>
 
@@ -330,6 +331,7 @@ extern gboolean mono_do_signal_chaining;
 extern gboolean mono_do_crash_chaining;
 extern MONO_API gboolean mono_use_llvm;
 extern MONO_API gboolean mono_use_interpreter;
+extern const char* mono_interp_opts_string;
 extern gboolean mono_do_single_method_regression;
 extern guint32 mono_single_method_regression_opt;
 extern MonoMethod *mono_current_single_method;
@@ -2111,6 +2113,7 @@ void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
 MONO_API void      mono_print_method_from_ip         (void *ip);
 MONO_API char     *mono_pmip                         (void *ip);
+MONO_API int mono_ee_api_version (void);
 gboolean  mono_debug_count                  (void);
 MONO_LLVM_INTERNAL const char* mono_inst_name                  (int op);
 int       mono_op_to_op_imm                 (int opcode);
@@ -2118,6 +2121,7 @@ int       mono_op_imm_to_op                 (int opcode);
 int       mono_load_membase_to_load_mem     (int opcode);
 guint     mono_type_to_load_membase         (MonoCompile *cfg, MonoType *type);
 guint     mono_type_to_store_membase        (MonoCompile *cfg, MonoType *type);
+guint32   mono_type_to_stloc_coerce         (MonoType *type);
 guint     mini_type_to_stind                (MonoCompile* cfg, MonoType *type);
 MonoJitInfo* mini_lookup_method             (MonoDomain *domain, MonoMethod *method, MonoMethod *shared);
 guint32   mono_reverse_branch_op            (guint32 opcode);
@@ -2135,7 +2139,6 @@ gpointer  mono_jit_find_compiled_method     (MonoDomain *domain, MonoMethod *met
 gpointer  mono_jit_compile_method           (MonoMethod *method, MonoError *error);
 gpointer  mono_jit_compile_method_jit_only  (MonoMethod *method, MonoError *error);
 gpointer  mono_jit_compile_method_inner     (MonoMethod *method, MonoDomain *target_domain, int opt, MonoError *error);
-MonoInst* mono_create_tls_get               (MonoCompile *cfg, MonoTlsKey key);
 GList    *mono_varlist_insert_sorted        (MonoCompile *cfg, GList *list, MonoMethodVar *mv, int sort_type);
 GList    *mono_varlist_sort                 (MonoCompile *cfg, GList *list, int sort_type);
 void      mono_analyze_liveness             (MonoCompile *cfg);
@@ -2473,7 +2476,12 @@ void    mono_arch_notify_pending_exc            (MonoThreadInfo *info);
 guint8* mono_arch_get_call_target               (guint8 *code);
 guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, mgreg_t *regs, guint8 *code);
 GSList *mono_arch_get_trampolines               (gboolean aot);
-gpointer mono_arch_get_enter_icall_trampoline   (MonoTrampInfo **info);
+gpointer mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info);
+
+#ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+void mono_arch_set_native_call_context          (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+void mono_arch_get_native_call_context          (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig);
+#endif
 
 /*New interruption machinery */
 void
@@ -2672,6 +2680,9 @@ mini_class_is_generic_sharable (MonoClass *klass);
 
 gboolean
 mini_generic_inst_is_sharable (MonoGenericInst *inst, gboolean allow_type_vars, gboolean allow_partial);
+
+MonoMethod*
+mono_class_get_method_generic (MonoClass *klass, MonoMethod *method, MonoError *error);
 
 gboolean
 mono_is_partially_sharable_inst (MonoGenericInst *inst);

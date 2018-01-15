@@ -1454,6 +1454,7 @@ namespace Mono.CSharp
 		int TypeParametersCount { get; }
 		TypeParameterSpec[] TypeParameters { get; }
 
+		TypeSpec GetAsyncMethodBuilder ();
 		TypeSpec GetAttributeCoClass ();
 		string GetAttributeDefaultMember ();
 		AttributeUsageAttribute GetAttributeUsage (PredefinedAttribute pa);
@@ -1563,6 +1564,11 @@ namespace Mono.CSharp
 		}
 
 		#region ITypeDefinition Members
+
+		TypeSpec ITypeDefinition.GetAsyncMethodBuilder ()
+		{
+			return null;
+		}
 
 		TypeSpec ITypeDefinition.GetAttributeCoClass ()
 		{
@@ -1750,6 +1756,11 @@ namespace Mono.CSharp
 			get {
 				throw new NotSupportedException ();
 			}
+		}
+
+		public TypeSpec GetAsyncMethodBuilder ()
+		{
+			return null;
 		}
 
 		public TypeSpec GetAttributeCoClass ()
@@ -1999,7 +2010,7 @@ namespace Mono.CSharp
 	[System.Diagnostics.DebuggerDisplay("{DisplayDebugInfo()}")]
 	class ReferenceContainer : ElementTypeSpec
 	{
-		ReferenceContainer (TypeSpec element)
+		protected ReferenceContainer (TypeSpec element)
 			: base (MemberKind.ByRef, element, null)
 		{
 			cache = null;
@@ -2047,6 +2058,34 @@ namespace Mono.CSharp
 		protected override void InitializeMemberCache(bool onlyTypes)
 		{
 			cache = Element.MemberCache;
+		}
+	}
+
+	[System.Diagnostics.DebuggerDisplay ("{DisplayDebugInfo()}")]
+	class ReadOnlyReferenceContainer : ReferenceContainer
+	{
+		public ReadOnlyReferenceContainer (TypeSpec element)
+			: base (element)
+		{
+		}
+
+		string DisplayDebugInfo ()
+		{
+			return "ref readonly " + GetSignatureForError ();
+		}
+
+		public new static ReferenceContainer MakeType (ModuleContainer module, TypeSpec element)
+		{
+			if (element.Kind == MemberKind.ByRef)
+				throw new ArgumentException ();
+
+			ReadOnlyReferenceContainer pc;
+			if (!module.ReadonlyReferenceTypesCache.TryGetValue (element, out pc)) {
+				pc = new ReadOnlyReferenceContainer (element);
+				module.ReadonlyReferenceTypesCache.Add (element, pc);
+			}
+
+			return pc;
 		}
 	}
 

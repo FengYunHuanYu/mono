@@ -43,6 +43,10 @@ struct _MonoErrorBoxed {
 	MonoImage *image;
 };
 
+// Initial version for easier to read history.
+#define ERROR_DECL(name) \
+	MonoError name
+
 #define error_init(error) do {	\
 	((MonoErrorInternal*)(error))->error_code = MONO_ERROR_NONE;	\
 	((MonoErrorInternal*)(error))->flags = 0;	\
@@ -56,14 +60,16 @@ struct _MonoErrorBoxed {
 #define goto_if_nok(error,label) do { if (!is_ok ((error))) goto label; } while (0)
 
 /* Only use this in icalls */
-#define return_val_and_set_pending_if_nok(error,value)	\
+#define return_val_and_set_pending_if_nok(error, value) \
+do { 							\
 	if (mono_error_set_pending_exception ((error)))	\
-		return (value);
+		return (value); 			\
+} while (0)						\
 
 void
 mono_error_assert_ok_pos (MonoError *error, const char* filename, int lineno) MONO_LLVM_INTERNAL;
 
-#define mono_error_assert_ok(e) mono_error_assert_ok_pos (e, __FILE__, __LINE__);
+#define mono_error_assert_ok(e) mono_error_assert_ok_pos (e, __FILE__, __LINE__)
 
 void
 mono_error_dup_strings (MonoError *error, gboolean dup_strings);

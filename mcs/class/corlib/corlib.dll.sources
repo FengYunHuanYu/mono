@@ -1637,15 +1637,19 @@ corert/ThreadPoolBoundHandle.cs
 
 ../../../external/corert/src/Runtime.Base/src/System/Runtime/InteropServices/NativeCallableAttribute.cs
 
+../../../external/corert/src/System.Private.CoreLib/shared/System/Tuple.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/TupleExtensions.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/ValueTuple.cs
 
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Collections/DictionaryEntry.cs
 
+../../../external/corert/src/System.Private.CoreLib/shared/System/Collections/Generic/Dictionary.cs
+../../../external/corert/src/System.Private.CoreLib/shared/System/Collections/Generic/IDictionaryDebugView.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Collections/Generic/KeyValuePair.cs
 
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Diagnostics/Debug.cs
 
+../../../external/corert/src/System.Private.CoreLib/shared/System/Runtime/CompilerServices/IntrinsicAttribute.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Runtime/CompilerServices/IsReadOnlyAttribute.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Runtime/CompilerServices/IsByRefLikeAttribute.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Runtime/CompilerServices/ITuple.cs
@@ -1656,15 +1660,12 @@ corert/ThreadPoolBoundHandle.cs
 
 
 ../../../external/corert/src/System.Private.CoreLib/src/System/Array.cs
-../../../external/corert/src/System.Private.CoreLib/src/System/Tuple.cs
 
 ../../../external/corert/src/System.Private.CoreLib/src/System/Collections/LowLevelComparer.cs
-../../../external/corert/src/System.Private.CoreLib/src/System/Collections/ObjectEqualityComparer.cs
 
 ../../../external/corert/src/System.Private.CoreLib/src/System/Collections/Generic/ArraySortHelper.cs
-../../../external/corert/src/System.Private.CoreLib/src/System/Collections/Generic/IDictionaryDebugView.cs
-../../../external/corert/src/System.Private.CoreLib/src/System/Collections/Generic/Dictionary.cs
-../../../external/corert/src/System.Private.CoreLib/src/System/Collections/Generic/NonRandomizedStringEqualityComparer.cs
+
+../../../external/corert/src/System.Private.CoreLib/src/System/Threading/ThreadPoolCallbackWrapper.cs
 
 corefx/SR.cs
 
@@ -1688,8 +1689,8 @@ corefx/SR.cs
 ../../../external/corefx/src/System.Memory/src/System/ReadOnlySpan.cs
 ../../../external/corefx/src/System.Memory/src/System/Span.cs
 ../../../external/corefx/src/System.Memory/src/System/SpanDebugView.cs
-../../../external/corefx/src/System.Memory/src/System/SpanExtensions.cs
-../../../external/corefx/src/System.Memory/src/System/SpanExtensions.Portable.cs
+../../../external/corefx/src/System.Memory/src/System/MemoryExtensions.cs
+../../../external/corefx/src/System.Memory/src/System/MemoryExtensions.Portable.cs
 ../../../external/corefx/src/System.Memory/src/System/SpanHelpers.cs
 ../../../external/corefx/src/System.Memory/src/System/SpanHelpers.Clear.cs
 ../../../external/corefx/src/System.Memory/src/System/SpanHelpers.byte.cs
@@ -1697,6 +1698,7 @@ corefx/SR.cs
 ../../../external/corefx/src/System.Memory/src/System/ThrowHelper.cs
 ../../../external/corefx/src/System.Memory/src/System/Buffers/*.cs
 ../../../external/corefx/src/System.Memory/src/System/Buffers/Binary/*.cs
+../../../external/corefx/src/System.Memory/src/System/Runtime/InteropServices/*.cs
 
 ../../../external/corefx/src/System.Runtime.InteropServices.RuntimeInformation/src/System/Runtime/InteropServices/RuntimeInformation/OSPlatform.cs
 ../../../external/corefx/src/System.Runtime.InteropServices.RuntimeInformation/src/System/Runtime/InteropServices/RuntimeInformation/Architecture.cs

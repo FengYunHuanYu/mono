@@ -1401,34 +1401,35 @@ process_add_sigchld_handler (void)
 void
 mono_w32process_signal_finished (void)
 {
-	int status;
-	int pid;
-	Process *process;
+	mono_coop_mutex_lock (&processes_mutex);
 
-	do {
+	for (Process* process = processes; process; process = process->next) {
+		int status = -1;
+		int pid;
+
 		do {
-			pid = waitpid (-1, &status, WNOHANG);
+			pid = waitpid (process->pid, &status, WNOHANG);
 		} while (pid == -1 && errno == EINTR);
 
+		// possible values of 'pid':
+		//  process->pid : the status changed for this child
+		//  0            : status unchanged for this PID
+		//  ECHILD       : process has been reaped elsewhere (or never existed)
+		//  EINVAL       : invalid PID or other argument
+
+		// Therefore, we ignore status unchanged (nothing to do) and error
+		// events (process is cleaned up later).
 		if (pid <= 0)
-			break;
+			continue;
+		if (process->signalled)
+			continue;
 
-		mono_coop_mutex_lock (&processes_mutex);
+		process->signalled = TRUE;
+		process->status = status;
+		mono_coop_sem_post (&process->exit_sem);
+	}
 
-		for (process = processes; process; process = process->next) {
-			if (process->pid != pid)
-				continue;
-			if (process->signalled)
-				continue;
-
-			process->signalled = TRUE;
-			process->status = status;
-			mono_coop_sem_post (&process->exit_sem);
-			break;
-		}
-
-		mono_coop_mutex_unlock (&processes_mutex);
-	} while (1);
+	mono_coop_mutex_unlock (&processes_mutex);
 }
 
 static gboolean
@@ -2061,10 +2062,6 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		if (process_info != NULL) {
 			process_info->process_handle = handle;
 			process_info->pid = pid;
-
-			/* FIXME: we might need to handle the thread info some day */
-			process_info->thread_handle = INVALID_HANDLE_VALUE;
-			process_info->tid = 0;
 		}
 
 		mono_w32handle_unref (handle_data);
@@ -2217,20 +2214,18 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		}
 		/* Shell exec should not return a process handle when it spawned a GUI thing, like a browser. */
 		mono_w32handle_close (process_info->process_handle);
-		process_info->process_handle = NULL;
+		process_info->process_handle = INVALID_HANDLE_VALUE;
 	}
 
 done:
 	if (ret == FALSE) {
 		process_info->pid = -mono_w32error_get_last ();
 	} else {
-		process_info->thread_handle = NULL;
 #if !defined(MONO_CROSS_COMPILE)
 		process_info->pid = mono_w32process_get_pid (process_info->process_handle);
 #else
 		process_info->pid = 0;
 #endif
-		process_info->tid = 0;
 	}
 
 	return ret;
@@ -2327,7 +2322,7 @@ ves_icall_System_Diagnostics_Process_CreateProcess_internal (MonoW32ProcessStart
 MonoArray *
 ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 {
-	MonoError error;
+	ERROR_DECL (error);
 	MonoArray *procs;
 	gpointer *pidarray;
 	int i, count;
